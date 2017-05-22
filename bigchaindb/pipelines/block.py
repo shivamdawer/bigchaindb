@@ -110,6 +110,8 @@ class BlockPipeline:
         logger.info('Write new block %s with %s transactions',
                     block.id, len(block.transactions))
         self.bigchain.write_block(block)
+        self.bigchain.statsd.incr('pipelines.block.throughput',
+                                  len(block.transactions))
         return block
 
     def delete_tx(self, block):
@@ -146,6 +148,11 @@ def tx_collector():
     s.send(None)
     return s
 
+class Nnode(Node):
+    def safe_run_forever(self):
+        import os
+        logger.info("%s-%s" % (os.getpid(), self.target))
+        super().safe_run_forever()
 
 def create_pipeline():
     """Create and return the pipeline of operations to be distributed
@@ -155,11 +162,11 @@ def create_pipeline():
 
     pipeline = Pipeline([
         Pipe(maxsize=1000),
-        Node(block_pipeline.filter_tx),
-        Node(block_pipeline.validate_tx, fraction_of_cores=1),
-        Node(block_pipeline.create, timeout=1),
-        Node(block_pipeline.write),
-        Node(block_pipeline.delete_tx),
+        Nnode(block_pipeline.filter_tx),
+        Nnode(block_pipeline.validate_tx, fraction_of_cores=1),
+        Nnode(block_pipeline.create, timeout=1),
+        Nnode(block_pipeline.write),
+        Nnode(block_pipeline.delete_tx),
     ])
 
     return pipeline

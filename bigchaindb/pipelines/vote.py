@@ -138,9 +138,9 @@ class Vote:
             self.last_voted_id = block_id
             del self.counters[block_id]
             del self.validity[block_id]
-            return vote
+            return vote, num_tx
 
-    def write_vote(self, vote):
+    def write_vote(self, vote, num_tx):
         """Write vote to the database.
 
         Args:
@@ -150,6 +150,7 @@ class Vote:
         logger.info("Voting '%s' for block %s", validity,
                     vote['vote']['voting_for_block'])
         self.bigchain.write_vote(vote)
+        self.bigchain.statsd.incr('pipelines.vote.throughput', num_tx)
         return vote
 
 
@@ -160,6 +161,13 @@ def initial():
     return rs
 
 
+class Nnode(Node):
+    def safe_run_forever(self):
+        import os
+        logger.info("%s-%s" % (os.getpid(), self.target))
+        super().safe_run_forever()
+
+
 def create_pipeline():
     """Create and return the pipeline of operations to be distributed
     on different processes."""
@@ -167,11 +175,11 @@ def create_pipeline():
     voter = Vote()
 
     vote_pipeline = Pipeline([
-        Node(voter.validate_block),
-        Node(voter.ungroup),
-        Node(voter.validate_tx, fraction_of_cores=1),
-        Node(voter.vote),
-        Node(voter.write_vote)
+        Nnode(voter.validate_block),
+        Nnode(voter.ungroup),
+        Nnode(voter.validate_tx, fraction_of_cores=1),
+        Nnode(voter.vote),
+        Nnode(voter.write_vote)
     ])
 
     return vote_pipeline
