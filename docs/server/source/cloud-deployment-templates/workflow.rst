@@ -86,6 +86,7 @@ you must ask the managing organization for the ``Agent Api Key``.
 #. Client Certificate for BigchainDB Server to identify itself to MongoDB
 #. Client Certificate for MongoDB Monitoring Agent to identify itself to MongoDB
 #. Client Certificate for MongoDB Backup Agent to identify itself to MongoDB
+#. CRL for the infrastructure to not accept revoked certificates.
 
 Ask the managing organization to use its self-signed CA to sign those certificates.
 

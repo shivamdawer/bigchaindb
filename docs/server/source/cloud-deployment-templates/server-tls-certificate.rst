@@ -35,6 +35,9 @@ and using:
 
    ./easyrsa --req-cn=mdb-instance-0 --subject-alt-name=DNS:localhost,DNS:mdb-instance-0 gen-req mdb-instance-0 nopass
 
+You will be prompted to enter the Distinguished Name for this certificate.
+You can hit enter to accept the default values or change them at each prompt.
+
 You can replace the common name (``mdb-instance-0`` above) with any other name
 so long as the instance can verify that it is the hostname.
 
